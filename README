@@ -1,0 +1,9 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1386
+
+NOTICE: MICROSOFT WINDOWS IS NOT CURRENTLY SUPPORTED BY THIS SCRIPT YET!
+
+I found a very nice plugin called gdbvim. Now I can debug my C / C++ code in VIM with its help. The original copy of the plugin can be found at: vimscript #84. See this link for more information about this plugin.
+
+Unfortunately, I can only set breakpoints with this plugin, but I can't clear the breakpoints set before. So I modified the plugin and made "toggle breakpoints" feature possible. Here is my newly patched code. The new gdbvim.vim requires multvars.vim, which can be found at: vimscript #171.
+
+Any comments or suggestions are welcome.
