@@ -3,7 +3,7 @@
 # vim:sw=4:
 #
 # gdb integration for vim
-# 
+#
 # Authors: Thomas Zellerin
 #          TS Urban
 #          Markus Kremer <Markus.Kremer@gmx.de>
@@ -27,7 +27,7 @@
 #
 # History:
 #
-# 09/05/01 Markus  seems to work with pipes, history and ctrl c 
+# 09/05/01 Markus  seems to work with pipes, history and ctrl c
 #
 #
 
@@ -45,8 +45,8 @@ END { { unlink ($PIPE) or die "unlink $PIPE: $!"; }}
 
 # process arguments
 $result = GetOptions (
-	'server=s'		=> \$server,
-	'help!'			=> \$help
+        'server=s'              => \$server,
+        'help!'                 => \$help
 );
 
 # print @ARGV, "\n";
@@ -54,8 +54,8 @@ $result = GetOptions (
 ## unknown option or help asked for
 if (!$result || $help) # {{{
 {
-	help ();
-	exit 1;
+        help ();
+        exit 1;
 } # }}}
 
 $VIMNAME=$server if(defined($server));
@@ -116,6 +116,26 @@ input_pipe() if ($input_pipe_pid==0);
 
 $worker_pid=$PID;
 
+$line = "";
+if (open($SOURCE, "< .gdbvim_breakpoints"))
+{
+    while (<$SOURCE> && $line == "")
+    {
+        $line = readline($SOURCE);
+    }
+}
+
+vim_call('Gdb_interf_init(\"'.$PIPE.'\", \"'.$ENV{"PWD"}.'\")');
+print GDB_WTR "set prompt (gdb)\\n\n";
+
+foreach $item(split(/\|/, $line))
+{
+    @token = split(/:/, $item);
+    print "Gdb_togglebreak(\\\"@token[0]\\\", @token[1])";
+    vim_call("Gdb_togglebreak(\\\"@token[0]\\\", @token[1])");
+    print "\n";
+}
+
 worker();
 
 kill(15, $gdb_pid,$input_pipe_pid,$input_tty_pid);
@@ -152,7 +172,7 @@ sub input_pipe # {{{
         open(IN,"<$PIPE") or die "opening $PIPE failed";
         while(<IN>)
         {
-	    print "$_"; # As from input
+            print "$_"; # As from input
             print GDB_WTR $_;
         };
         close IN;
@@ -163,22 +183,30 @@ sub input_pipe # {{{
 # this function processes the gdb output, prints it and sends vim commands
 sub worker # {{{
 {
-    
-    vim_call('Gdb_interf_init(\"'.$PIPE.'\", \"'.$ENV{"PWD"}.'\")');
-    print GDB_WTR "set prompt (gdb)\\n\n";
     while (<GDB_RDR>){
-        if (/^\(gdb\)/) 
+        if (/^\(gdb\)/)
         {
             print RL_WTR "READ\n";
             print "(gdbvim) ";
         }
         elsif (
                 s/Breakpoint ([0-9]+) at 0x.*: file ([^,]+), line ([0-9]+)./Gdb_Bpt($1,\\\"$2\\\",$3)/ ||
-                s/\032\032([^:]*):([0-9]+).*/Gdb_CurrFileLine(\\\"$1\\\", $2)/ 
+                s/\032\032([^:]*):([0-9]+).*/Gdb_CurrFileLine(\\\"$1\\\", $2)/
               )
         {
             chomp;
             vim_call($_);
+            print RL_WTR;
+        }
+        elsif (
+                s/Deleted breakpoints ([ 0-9]+)/$1/
+              )
+        {
+            chomp;
+            foreach $item(split(/ /))
+            {
+                vim_call("Gdb_NoBpt($item)");
+            }
             print RL_WTR;
         }
         elsif (
